@@ -18,7 +18,6 @@
 
 
 
-bool TMM_DisplayThread::halt_threads = false;
 
 Colour GetColor(const char* s)
 {
@@ -40,15 +39,13 @@ Colour GetColor(const char* s)
 class TMM_DisplayThread::Context
 {
 public:
-	Context () :config(nullptr)
-{
-}
 
 	Context (Configuration* config_) :
-		ctx (),config(config_)
+		halt_thread(false), ctx (),config(config_)
 	{
 	}
 
+	bool halt_thread;
 
 	std::thread ctx;
 	Configuration* config;
@@ -97,15 +94,11 @@ void TMM_DisplayThread::Context::do_thread (std::shared_ptr<Context> pctx)
 			usleep(100000); //debouncing
 		}
 		b=btn_return_clk();
-	} while(!TMM_DisplayThread::halt_threads );
+	} while(!pctx->halt_thread );
 }
 
 
 
-TMM_DisplayThread::TMM_DisplayThread () :
-							  pcontext (new Context)
-{
-}
 
 
 TMM_DisplayThread::TMM_DisplayThread (Configuration* config_) :
@@ -119,11 +112,13 @@ void TMM_DisplayThread::start_thread ()
 	pcontext->ctx = std::thread (Context::do_thread, pcontext);
 }
 
-
-void TMM_DisplayThread::join (void)
+void TMM_DisplayThread::stop_thread ()
 {
-	return pcontext->ctx.join ();
+	pcontext->halt_thread=true;
+	pcontext->ctx.join ();
 }
+
+
 
 
 

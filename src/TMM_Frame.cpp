@@ -48,3 +48,10 @@ TMM_Frame::TMM_Frame():pFrame(new frame_t)
 
 }
 
+TMM_Frame::TMM_Frame(const TMM_Frame & rhs):pFrame(new frame_t)
+{
+	//need to do a deep copy
+	*pFrame=*(rhs.pFrame); //copy the contents of the from not just the reference
+}
+
+

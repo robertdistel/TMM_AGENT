@@ -14,24 +14,28 @@
 #include <cstring>
 #include "TMM_Frame.h"
 #include <assert.h>
+#include "perfmon.h"
 
 
 
 
 static uint64_t key[3][4] = {
-		{0x1234567890123456,0x1234567890123456,0x1234567890123456,0x1234567890123456},
-		{0x1234567890123456,0x1234567890123456,0x1234567890123456,0x1234567890123457},
-		{0x1234567890123456,0x1234567890123456,0x1234567890123456,0x1234567890123458}
+		{0,0,0,1},
+		{0,0,0,2},
+		{0,0,0,3}
 };
 
 
 TMM_Frame  Crypto::encrypt(const TMM_Frame& ptext) //encrypt a block
 {
+	MON("Crypto::encrypt");
 	assert(ptext.plaintext()==true);
 	assert(ptext.domain_ID()>=0 && ptext.domain_ID()<3);
 	evp_cipher_ctx_st * ctx = EVP_CIPHER_CTX_new ();
+	uint8_t* KEY=(uint8_t*)key[ptext.domain_ID()];
 
-	int rc = EVP_EncryptInit_ex (ctx, EVP_aes_128_cbc (), NULL, (uint8_t*)key[ptext.domain_ID()], iv);
+
+	int rc = EVP_EncryptInit_ex (ctx, EVP_aes_256_cbc (), NULL, KEY, iv);
 	if (rc != 1)
 	{
 		std::cerr << ("EVP_EncryptInit_ex failed") << std::endl;
@@ -68,7 +72,8 @@ TMM_Frame  Crypto::encrypt(const TMM_Frame& ptext) //encrypt a block
 	ctext.data_sz (out_len1 + out_len2);
 	memcpy (ctext.IV(), iv, BLOCK_SIZE); // initalise IV for this block based off previous block //becomes our source of random numbers
 	//and set the iv to use next as the start of this cypher text
-	memcpy (iv, ctext.data (), BLOCK_SIZE);
+	//memcpy (iv, ctext.data (), BLOCK_SIZE);
+	(*iv)++;
 
 	EVP_CIPHER_CTX_free (ctx);
 	ctext.plaintext(false);
@@ -79,7 +84,8 @@ TMM_Frame  Crypto::encrypt(const TMM_Frame& ptext) //encrypt a block
 Crypto::Crypto ()
 {
 
-	EVP_add_cipher (EVP_aes_128_cbc ());
+	EVP_add_cipher (EVP_aes_256_cbc ());
+	memset(iv,0,BLOCK_SIZE);
 
 }
 
@@ -90,11 +96,14 @@ Crypto::~Crypto ()
 
 TMM_Frame  Crypto::decrypt (const TMM_Frame& ctext) //decrypt a block
 {
+	MON("Crypto::decrypt");
 	assert(ctext.plaintext()==false);
 
 	auto ctx = EVP_CIPHER_CTX_new ();
 
-	int rc = EVP_EncryptInit_ex (ctx, EVP_aes_128_cbc (), NULL, (uint8_t*)key[ctext.domain_ID()], ctext.IV());
+	uint8_t* KEY=(uint8_t*)key[ctext.domain_ID()];
+
+	int rc = EVP_DecryptInit_ex (ctx, EVP_aes_256_cbc (), NULL, KEY, ctext.IV());
 
 
 	if (rc != 1)
@@ -126,6 +135,7 @@ TMM_Frame  Crypto::decrypt (const TMM_Frame& ctext) //decrypt a block
 	if (rc != 1)
 	{
 		std::cerr << "EVP_DecryptFinal_ex failed" << std::endl;
+		ERR_print_errors_fp(stderr);
 		exit (-1);
 	}
 

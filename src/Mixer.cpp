@@ -10,6 +10,7 @@
 #include "TMM_Frame.h"
 #include <iostream>
 #include <assert.h>
+#include "perfmon.h"
 
 
 
@@ -28,6 +29,7 @@ Mixer::Mixer(uint16_t target_latency_,uint32_t sample_rate):target_latency(targe
 
 const TMM_Frame&  Mixer::Write (const TMM_Frame& tmm_frame)
 {
+	MON("Mixer::Write");
 	assert(tmm_frame.linear()==true);
 	assert(tmm_frame.plaintext()==true);
 
@@ -61,6 +63,8 @@ const TMM_Frame&  Mixer::Write (const TMM_Frame& tmm_frame)
 //the timestamp to read and the duration is set in the frame
 TMM_Frame&  Mixer::Read (TMM_Frame& tmm_frame)
 {
+	MON("Mixer::Read");
+
 	uint16_t len(tmm_frame.data_sz()/2);
 	uint32_t k(last_read); //we set k to continue from where we left off.
 

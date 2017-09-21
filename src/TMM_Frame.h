@@ -50,6 +50,7 @@ private:
 
 public:
 	TMM_Frame();
+	TMM_Frame(const TMM_Frame & rhs);
 
 	TMM_Frame& 	compress(Codec& compressor);
 	TMM_Frame& 	expand(Codec& expander);

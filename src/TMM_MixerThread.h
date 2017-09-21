@@ -22,17 +22,14 @@ private:
 
 public:
 
-	TMM_MixerThread () ;
-
 
 	TMM_MixerThread (Configuration* config_) ;
 
 
 	void start_thread ();
 
-	void join (void);
+	void stop_thread();
 
-	static bool halt_threads;
 
 
 };

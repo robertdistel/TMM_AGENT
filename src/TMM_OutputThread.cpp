@@ -13,23 +13,21 @@
 #include "TMM_Frame.h"
 #include "setRealtimePriority.h"
 #include "OpenSSL_ReaderWriter.h"
+#include "perfmon.h"
 
-bool TMM_OutputThread::halt_threads = false;
 
 
 class TMM_OutputThread::Context
 {
 public:
-	Context () :config(nullptr)
+
+	Context (Configuration* config_) :
+		halt_thread(false),ctx (),config(config_)
 {
 }
 
-	Context (Configuration* config_) :
-		ctx (),config(config_)
-	{
-	}
 
-
+	bool halt_thread;
 	std::thread ctx;
 	Configuration* config;
 	static void do_thread (std::shared_ptr<Context> pctx);
@@ -40,6 +38,7 @@ public:
 
 void TMM_OutputThread::Context::do_thread (std::shared_ptr<Context> pctx)
 {
+	MON_THREAD("TMM_OutputThread");
 	set_realtime_priority(5);
 	auto  pkt(pctx->config->getPktIf());
 	auto  snd(pctx->config->getAudioIf());
@@ -47,23 +46,23 @@ void TMM_OutputThread::Context::do_thread (std::shared_ptr<Context> pctx)
 
 	TMM_Frame tmm_frame;
 	do {
-		tmm_frame.domain_ID(pctx->config->selected_domain);
-//		pkt->Write(crypto.encrypt(snd->Read(tmm_frame)));
-		pkt->Write((snd->Read(tmm_frame)));
-		(crypto.encrypt(snd->Read(tmm_frame.data_sz(16))));
-	} while(!TMM_OutputThread::halt_threads );
+		{
+			MON("TMM_OutputThread:MainLoop");
+
+			tmm_frame.domain_ID(pctx->config->selected_domain);
+			pkt->Write(crypto.encrypt(snd->Read(tmm_frame)));
+			//pkt->Write(crypto.decrypt(crypto.encrypt(snd->Read(tmm_frame))));
+		}
+	} while(!pctx->halt_thread);
 }
 
 
 
-TMM_OutputThread::TMM_OutputThread () :
-							  pcontext (new Context)
-{
-}
+
 
 
 TMM_OutputThread::TMM_OutputThread (Configuration* config_) :
-							  pcontext (new Context (config_))
+													  pcontext (new Context (config_))
 {
 }
 
@@ -73,10 +72,12 @@ void TMM_OutputThread::start_thread ()
 	pcontext->ctx = std::thread (Context::do_thread, pcontext);
 }
 
-
-void TMM_OutputThread::join (void)
+void TMM_OutputThread::stop_thread ()
 {
+	pcontext->halt_thread=true;
 	return pcontext->ctx.join ();
 }
+
+
 
 

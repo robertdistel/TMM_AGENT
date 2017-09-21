@@ -19,6 +19,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <string>
+#include "perfmon.h"
 
 UdpReaderWriter:: UdpReaderWriter (void) :
 s_in(0),s_out(0), socket_details ()
@@ -67,6 +68,8 @@ TMM_Frame&  UdpReaderWriter::Read (TMM_Frame& tmm_frame)
 		std::cerr << "Couldn't open recv udp port on port " << socket_details << std::endl;
 		exit (-1);
 	}
+
+	MON("UdpReaderWriter::Read");
 
 	int recieved_bytes (0);
 
@@ -123,6 +126,8 @@ const TMM_Frame&  UdpReaderWriter::Write (const TMM_Frame& tmm_frame)
 		std::cerr << "Couldn't open tx udp port on '" << socket_details << "'" << std::endl;
 		exit (-1);
 	}
+
+	MON("UdpReaderWriter::Write");
 	ssize_t rc=0;
 	if ((rc = send (s_out, tmm_frame.frame(), tmm_frame.packet_sz (), 0)) != int (tmm_frame.packet_sz ()))
 	{

@@ -12,6 +12,7 @@
 #include <iostream>
 #include <algorithm>
 #include "HardwareTimer.h"
+#include "perfmon.h"
 
 
 #define INIT(FUNC,...) 																			\
@@ -93,9 +94,9 @@ int AlsaReaderWriter::configure_alsa_audio (snd_pcm_t *& device, const char* nam
 
 	INIT(snd_pcm_hw_params ,device, hw_params);
 
-	auto bits_per_sample = snd_pcm_format_physical_width(SND_PCM_FORMAT_S16_LE);
-	auto bits_per_frame = bits_per_sample * channels;
-	auto bytes_per_frame = bits_per_frame / 8;
+//	auto bits_per_sample = snd_pcm_format_physical_width(SND_PCM_FORMAT_S16_LE);
+//	auto bits_per_frame = bits_per_sample * channels;
+//	auto bytes_per_frame = bits_per_frame / 8;
 	//std::cout << "Bytes per frame are :" << bytes_per_frame << std::endl;
 
 
@@ -221,6 +222,7 @@ TMM_Frame&  AlsaReaderWriter::Read (TMM_Frame& tmm_frame)
 		captureTimer.resetEstimator(sample_rate);
 	}
 
+	MON("AlsaReaderWriter::Read");
 	unsigned int frames = std::min(snd_pcm_bytes_to_frames (capture_device_handle, TMM_Frame::maxDataSize)-1,snd_pcm_sframes_t((target_latency*sample_rate)/sec));
 
 	read_sample_count+=frames;
@@ -293,6 +295,8 @@ const TMM_Frame&  AlsaReaderWriter::Write (const TMM_Frame& tmm_frame)
 
 		snd_pcm_prepare (playback_device_handle);
 	}
+
+	MON("AlsaReaderWriter::Write");
 
 	unsigned int frames = snd_pcm_bytes_to_frames (playback_device_handle, tmm_frame.data_sz());
 

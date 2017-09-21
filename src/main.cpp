@@ -25,15 +25,20 @@ int main(int argc, char** argv)
 	  TMM_InputThread input(&config);
 	  TMM_OutputThread output(&config);
 	  TMM_MixerThread mixer(&config);
+	  output.start_thread();
 	  display_thread.start_thread();
 	  input.start_thread();
-	  output.start_thread();
 	  mixer.start_thread();
-
-	  for(uint32_t k=0; k<60; k++)
+	  for(uint32_t k=0; k<30; k++)
 	    {
-	  	    sleep (1000);
+	  	    sleep (1);
 	  	    std::cout << k << std::endl;
 
 	    }
+	  input.stop_thread();
+	  output.stop_thread();
+	  mixer.stop_thread();
+	  display_thread.stop_thread();
+
+
 }

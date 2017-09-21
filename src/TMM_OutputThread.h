@@ -21,7 +21,7 @@ private:
 public:
 
 
-  TMM_OutputThread () ;
+
 
 
   TMM_OutputThread (Configuration* config_) ;
@@ -29,9 +29,8 @@ public:
 
   void start_thread ();
 
-  void  join (void);
+  void stop_thread ();
 
-  static bool halt_threads;
 
 };
 

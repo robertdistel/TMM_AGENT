@@ -31,6 +31,10 @@
 									<listOptionValue builtIn="false" value="/home/robert/raspi-rootfs/usr/include"/>
 									<listOptionValue builtIn="false" value="/home/robert/raspi-rootfs/usr/include/arm-linux-gnueabihf"/>
 								</option>
+								<option id="gnu.c.compiler.option.debugging.gprof.415744546" name="Generate gprof information (-pg)" superClass="gnu.c.compiler.option.debugging.gprof" useByScannerDiscovery="false" value="true" valueType="boolean"/>
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1643409801" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="NO_THREADS"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.398300687" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.932445722" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler">
@@ -42,6 +46,10 @@
 									<listOptionValue builtIn="false" value="/home/robert/Downloads/eigen/Eigen"/>
 									<listOptionValue builtIn="false" value="/home/robert/raspi-rootfs/usr/include"/>
 									<listOptionValue builtIn="false" value="/home/robert/raspi-rootfs/usr/include/arm-linux-gnueabihf"/>
+								</option>
+								<option id="gnu.cpp.compiler.option.debugging.gprof.846389729" name="Generate gprof information (-pg)" superClass="gnu.cpp.compiler.option.debugging.gprof" useByScannerDiscovery="false" value="true" valueType="boolean"/>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.89098904" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="NO_THREADS"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.2130385294" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
@@ -56,6 +64,8 @@
 									<listOptionValue builtIn="false" value="crypto"/>
 									<listOptionValue builtIn="false" value="asound"/>
 								</option>
+								<option id="gnu.cpp.link.option.debugging.gprof.493401322" name="Generate gprof information (-pg)" superClass="gnu.cpp.link.option.debugging.gprof" useByScannerDiscovery="false" value="true" valueType="boolean"/>
+								<option id="gnu.cpp.link.option.flags.663511295" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1056771460" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -105,6 +115,7 @@
 									<listOptionValue builtIn="false" value="/home/robert/raspi-rootfs/usr/include"/>
 									<listOptionValue builtIn="false" value="/home/robert/raspi-rootfs/usr/include/arm-linux-gnueabihf"/>
 								</option>
+								<option id="gnu.c.compiler.option.debugging.gprof.2006348212" name="Generate gprof information (-pg)" superClass="gnu.c.compiler.option.debugging.gprof" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.2073347063" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.526368719" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler">
@@ -117,6 +128,7 @@
 									<listOptionValue builtIn="false" value="/home/robert/raspi-rootfs/usr/include"/>
 									<listOptionValue builtIn="false" value="/home/robert/raspi-rootfs/usr/include/arm-linux-gnueabihf"/>
 								</option>
+								<option id="gnu.cpp.compiler.option.debugging.gprof.1567493311" name="Generate gprof information (-pg)" superClass="gnu.cpp.compiler.option.debugging.gprof" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1211251152" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1257210161" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
@@ -130,6 +142,7 @@
 									<listOptionValue builtIn="false" value="crypto"/>
 									<listOptionValue builtIn="false" value="asound"/>
 								</option>
+								<option id="gnu.cpp.link.option.debugging.gprof.71149811" name="Generate gprof information (-pg)" superClass="gnu.cpp.link.option.debugging.gprof" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.788977601" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>

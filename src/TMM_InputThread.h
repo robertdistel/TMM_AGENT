@@ -21,17 +21,13 @@ private:
 public:
 
 
-  TMM_InputThread () ;
-
 
   TMM_InputThread (Configuration* config_) ;
 
 
   void start_thread ();
+  void stop_thread();
 
-  void  join (void);
-
-  static bool halt_threads;
 
 };
 

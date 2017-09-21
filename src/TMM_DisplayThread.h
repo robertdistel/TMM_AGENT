@@ -21,17 +21,13 @@ private:
 public:
 
 
-  TMM_DisplayThread () ;
-
 
   TMM_DisplayThread (Configuration* config_) ;
 
 
   void start_thread ();
+  void stop_thread ();
 
-  void  join (void);
-
-  static bool halt_threads;
 
 };
 
