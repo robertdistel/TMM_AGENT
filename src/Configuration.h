@@ -14,16 +14,19 @@
 class AlsaReaderWriter;
 class UdpReaderWriter;
 class Mixer;
+class OpusCodec;
 
 class Configuration
 {
 public:
 	std::atomic<uint8_t> selected_domain;
+	std::atomic<bool>    shutdown;
 	static uint8_t noDomains(void);
 	const char* getDomainName() const;
 	std::shared_ptr<AlsaReaderWriter> 	getAudioIf(){return audio_if;}
 	std::shared_ptr<UdpReaderWriter>  	getPktIf() {return pkt_if;}
 	std::shared_ptr<Mixer>				getMixer() {return mixer;}
+	std::shared_ptr<OpusCodec>			getCodec(uint8_t idx) {return codecs[idx];}
 	Configuration();
 
 private:
@@ -31,6 +34,7 @@ private:
 	std::shared_ptr<AlsaReaderWriter>	audio_if;
 	std::shared_ptr<UdpReaderWriter>	pkt_if;
 	std::shared_ptr<Mixer>				mixer;
+	std::shared_ptr<OpusCodec>			codecs[256];
 
 };
 

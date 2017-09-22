@@ -42,8 +42,8 @@ public:
 
 	Context (Configuration* config_) :
 		halt_thread(false), ctx (),config(config_)
-	{
-	}
+{
+}
 
 	bool halt_thread;
 
@@ -83,6 +83,9 @@ void TMM_DisplayThread::Context::do_thread (std::shared_ptr<Context> pctx)
 				dirty=true;
 			}
 			break;
+		case Button::Select:
+			pctx->config->shutdown=true;
+		break;
 		default:
 			break;
 		}
@@ -94,7 +97,7 @@ void TMM_DisplayThread::Context::do_thread (std::shared_ptr<Context> pctx)
 			usleep(100000); //debouncing
 		}
 		b=btn_return_clk();
-	} while(!pctx->halt_thread );
+	} while(!pctx->halt_thread && !pctx->config->shutdown);
 }
 
 
@@ -102,7 +105,7 @@ void TMM_DisplayThread::Context::do_thread (std::shared_ptr<Context> pctx)
 
 
 TMM_DisplayThread::TMM_DisplayThread (Configuration* config_) :
-							  pcontext (new Context (config_))
+									  pcontext (new Context (config_))
 {
 }
 

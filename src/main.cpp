@@ -29,11 +29,9 @@ int main(int argc, char** argv)
 	  display_thread.start_thread();
 	  input.start_thread();
 	  mixer.start_thread();
-	  for(uint32_t k=0; k<30; k++)
+	  while(!config.shutdown)
 	    {
 	  	    sleep (1);
-	  	    std::cout << k << std::endl;
-
 	    }
 	  input.stop_thread();
 	  output.stop_thread();

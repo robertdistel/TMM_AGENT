@@ -89,7 +89,7 @@ TMM_Frame&  Mixer::Read (TMM_Frame& tmm_frame)
 	if (delta > int32_t(buff_sz/2))
 		delta -=buff_sz;
 
-	phase = (63*phase + delta) / 64;
+	phase = (1023*phase + delta) / 1024;
 
 
 #if 0
@@ -106,10 +106,9 @@ TMM_Frame&  Mixer::Read (TMM_Frame& tmm_frame)
 #endif
 
 	last_read=k;
-#if 1
 	if ((phase > 48) || (phase < 0))
 	{
-		if ((phase > int32_t(buff_sz/4)) || (phase < -int32_t(buff_sz/4)))
+		if ((phase > 1000) || (phase < -1000))
 		{
 			last_read = tmm_frame.time() + len; // big step to the right time
 //			std::cout << "big step\n";
@@ -133,7 +132,6 @@ TMM_Frame&  Mixer::Read (TMM_Frame& tmm_frame)
 
 	}
 
-#endif
 
 	tmm_frame.linear(true);
 	tmm_frame.plaintext(true);

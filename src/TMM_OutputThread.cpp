@@ -14,6 +14,7 @@
 #include "setRealtimePriority.h"
 #include "OpenSSL_ReaderWriter.h"
 #include "perfmon.h"
+#include "Opus_ReaderWriter.h"
 
 
 
@@ -42,7 +43,9 @@ void TMM_OutputThread::Context::do_thread (std::shared_ptr<Context> pctx)
 	set_realtime_priority(5);
 	auto  pkt(pctx->config->getPktIf());
 	auto  snd(pctx->config->getAudioIf());
+	auto  codec(pctx->config->getCodec(0));
 	Crypto crypto;
+
 
 	TMM_Frame tmm_frame;
 	do {
@@ -50,8 +53,7 @@ void TMM_OutputThread::Context::do_thread (std::shared_ptr<Context> pctx)
 			MON("TMM_OutputThread:MainLoop");
 
 			tmm_frame.domain_ID(pctx->config->selected_domain);
-			pkt->Write(crypto.encrypt(snd->Read(tmm_frame)));
-			//pkt->Write(crypto.decrypt(crypto.encrypt(snd->Read(tmm_frame))));
+			pkt->Write(crypto.encrypt(codec->compress(snd->Read(tmm_frame))));
 		}
 	} while(!pctx->halt_thread);
 }

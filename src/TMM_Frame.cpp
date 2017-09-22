@@ -10,6 +10,7 @@
 #include "UdpReaderWriter.h"
 #include "Mixer.h"
 #include <iostream>
+#include <math.h>
 
 
 
@@ -25,10 +26,18 @@ uint8_t*	TMM_Frame::frame(){return (uint8_t*)&pFrame->header;}
 const uint8_t*	TMM_Frame::frame() const {return (uint8_t*)&pFrame->header;}
 bool		TMM_Frame::linear() const {return pFrame->header.linear;}
 bool		TMM_Frame::plaintext() const {return !pFrame->header.encrypted;}
-uint8_t*	TMM_Frame::IV() { return pFrame->header.iv;}
+TMM_Frame&	TMM_Frame::IV(const uint8_t* iv_) { memcpy(pFrame->header.iv,iv_, 16/*sizeof(pFrame->header.iv)*/); return *this;}
 const uint8_t*	TMM_Frame::IV() const { return pFrame->header.iv;}
 TMM_Frame&	TMM_Frame::linear(bool b) { pFrame->header.linear=b; return *this;}
 TMM_Frame&	TMM_Frame::plaintext(bool b) { pFrame->header.encrypted=!b; return *this;}
+TMM_Frame&  TMM_Frame::stream_ctr(uint32_t ctr) {pFrame->header.stream_ctr=ctr; return *this;}
+uint32_t 	TMM_Frame::stream_ctr(void) const {return pFrame->header.stream_ctr;}
+TMM_Frame&  TMM_Frame::stream_idx(uint8_t idx) {pFrame->header.stream_idx=idx; return *this;}
+uint8_t 	TMM_Frame::stream_idx(void) const {return pFrame->header.stream_idx;}
+TMM_Frame&  TMM_Frame::pwr(int8_t pwr) {pFrame->header.pwr=pwr; return *this;}
+int8_t		TMM_Frame::pwr() const {return pFrame->header.pwr;}
+TMM_Frame&  TMM_Frame::gain(int8_t gain) {pFrame->header.gain=gain; return *this;}
+int8_t		TMM_Frame::gain() const {return pFrame->header.gain;}
 
 
 #define DUMP(V) std::cout << #V <<" "<< V ()<< std::endl;
@@ -52,6 +61,76 @@ TMM_Frame::TMM_Frame(const TMM_Frame & rhs):pFrame(new frame_t)
 {
 	//need to do a deep copy
 	*pFrame=*(rhs.pFrame); //copy the contents of the from not just the reference
+}
+
+std::vector<int32_t> init_gain_LUT(void )
+{
+	std::vector<int32_t> m(97);
+	for (int k=0; k<97; k++)
+	{
+		int v=uint32_t(pow10(double(k/20)));  //given a power gain in dB this is the multiplication required - note the factor of 20
+		m[k]=v;
+	}
+	return m;
+}
+
+
+std::vector<int32_t> gain_LUT(init_gain_LUT());
+
+
+
+TMM_Frame&  TMM_Frame::set_gain()
+{
+	assert(plaintext()==true);
+	assert(linear()==true);
+
+	int32_t g=gain();
+	for(size_t k=0; k<data_sz()/2; k++)
+		((int16_t *)data())[k]*=g;
+	gain(0);
+	return *this;
+}
+
+std::map<int32_t,int32_t> init_log_LUT(void )
+{
+	std::map<int32_t,int32_t> m;
+	for (int k=0; k<97; k++)
+	{
+		int v=uint32_t(pow10(double(k/10)));
+		m[v]=k;
+	}
+	return m;
+}
+
+
+const std::map<int32_t,int32_t> log_LUT(init_log_LUT());
+
+uint32_t dB(uint32_t p)
+{
+	auto v=log_LUT.lower_bound(p);
+	return v->second;
+}
+
+TMM_Frame&  TMM_Frame::set_pwr() //measure the frames power (if linear and non-encrypted) and set the pwr field
+{
+	assert(plaintext()==true);
+	assert(linear()==true);
+	int32_t 	sum(0);
+	int32_t 	sum_2(0);
+	int32_t 	x;
+	size_t		n(data_sz()/2);
+
+	for(size_t k=0; k<n; k++)
+	{
+		x=((int16_t*)data())[k];
+		sum+=x;
+		sum_2+=x*x;
+	}
+
+	x=(sum_2-(sum*sum)/n)/n;
+	pwr(dB(x)-90); //sets full scale square wave (16bits) as +6dB power point
+	 	 	 	 	 //and we are now somewhere between -90 and 6 dB
+	return *this ;
 }
 
 

@@ -10,6 +10,7 @@
 #include "AlsaReaderWriter.h"
 #include "UdpReaderWriter.h"
 #include "Mixer.h"
+#include "Opus_ReaderWriter.h"
 
 
 const char * Configuration::DomainNames[]={
@@ -22,10 +23,12 @@ const char * Configuration::DomainNames[]={
 uint8_t Configuration::noDomains(void ) { return sizeof(DomainNames)/sizeof(DomainNames[0]); }
 const char* Configuration::getDomainName(void) const {return DomainNames[selected_domain];}
 
-Configuration::Configuration():selected_domain(0),audio_if(new AlsaReaderWriter("plughw:CARD=audioinjectorpi,DEV=0","plughw:CARD=audioinjectorpi,DEV=0",48000,5)),
+Configuration::Configuration():selected_domain(0),audio_if(new AlsaReaderWriter("plughw:CARD=audioinjectorpi,DEV=0","plughw:CARD=audioinjectorpi,DEV=0",48000,10)),
 		pkt_if(new UdpReaderWriter("10.42.0.1:12345")),
 		mixer(new Mixer(50,48000))
 {
+	for(size_t k=0; k<256; k++)
+		codecs[k]=std::shared_ptr<OpusCodec>(new OpusCodec(48000));
 
 }
 

@@ -70,7 +70,7 @@ TMM_Frame  Crypto::encrypt(const TMM_Frame& ptext) //encrypt a block
 
 	// Set cipher text size now that we know it
 	ctext.data_sz (out_len1 + out_len2);
-	memcpy (ctext.IV(), iv, BLOCK_SIZE); // initalise IV for this block based off previous block //becomes our source of random numbers
+	ctext.IV(iv);
 	//and set the iv to use next as the start of this cypher text
 	//memcpy (iv, ctext.data (), BLOCK_SIZE);
 	(*iv)++;

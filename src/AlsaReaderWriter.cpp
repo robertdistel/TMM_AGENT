@@ -13,6 +13,7 @@
 #include <algorithm>
 #include "HardwareTimer.h"
 #include "perfmon.h"
+#include <map>
 
 
 #define INIT(FUNC,...) 																			\
@@ -94,9 +95,9 @@ int AlsaReaderWriter::configure_alsa_audio (snd_pcm_t *& device, const char* nam
 
 	INIT(snd_pcm_hw_params ,device, hw_params);
 
-//	auto bits_per_sample = snd_pcm_format_physical_width(SND_PCM_FORMAT_S16_LE);
-//	auto bits_per_frame = bits_per_sample * channels;
-//	auto bytes_per_frame = bits_per_frame / 8;
+	//	auto bits_per_sample = snd_pcm_format_physical_width(SND_PCM_FORMAT_S16_LE);
+	//	auto bits_per_frame = bits_per_sample * channels;
+	//	auto bytes_per_frame = bits_per_frame / 8;
 	//std::cout << "Bytes per frame are :" << bytes_per_frame << std::endl;
 
 
@@ -128,20 +129,20 @@ int AlsaReaderWriter::configure_alsa_audio (snd_pcm_t *& device, const char* nam
 
 
 AlsaReaderWriter::AlsaReaderWriter () :
-    						  capture_device_name (), playback_device_name (),
-							  capture_device_handle (nullptr), playback_device_handle (nullptr),
-							  sample_rate (0), target_latency (0),
-							  underrun_count (0), overrun_count (0),
-							  read_sample_count(0), log_f(nullptr)
+    												  capture_device_name (), playback_device_name (),
+													  capture_device_handle (nullptr), playback_device_handle (nullptr),
+													  sample_rate (0), target_latency (0),
+													  underrun_count (0), overrun_count (0),
+													  read_sample_count(0), log_f(nullptr)
 {
 }
 
 AlsaReaderWriter::AlsaReaderWriter (std::string capture_device_name_,std::string playback_device_name_,unsigned int sample_rate_,unsigned int target_latency_) :
-    						  capture_device_name (capture_device_name_), playback_device_name (playback_device_name_),
-							  capture_device_handle (nullptr), playback_device_handle (nullptr),
-							  sample_rate (sample_rate_), target_latency (target_latency_ * ms),
-							  underrun_count (0), overrun_count (0),
-							  read_sample_count(0), log_f(nullptr)
+    												  capture_device_name (capture_device_name_), playback_device_name (playback_device_name_),
+													  capture_device_handle (nullptr), playback_device_handle (nullptr),
+													  sample_rate (sample_rate_), target_latency (target_latency_ * ms),
+													  underrun_count (0), overrun_count (0),
+													  read_sample_count(0), log_f(nullptr)
 {
 	//slow it down
 	//max_time_to_xflow = max_time_to_xflow*10;
@@ -181,33 +182,42 @@ uint64_t LL[100];
 
 uint16_t AlsaReaderWriter::getTX_Timestamp(void) const
 {
-//	static uint32_t ctr(0);
+	//	static uint32_t ctr(0);
 
 	snd_pcm_sframes_t available_frames(0);
 	if (capture_device_handle)
 		available_frames=snd_pcm_avail(capture_device_handle);
-//	LL[ctr]=available_frames+read_sample_count ;
-//	ctr++;
-//	if (ctr>=128)
-//		ctr=0;
+	//	LL[ctr]=available_frames+read_sample_count ;
+	//	ctr++;
+	//	if (ctr>=128)
+	//		ctr=0;
 
 	return uint16_t((static_cast<int32_t>(captureTimer.getTime(read_sample_count+available_frames)*sample_rate) ) % sample_rate);
 } //this is the time when a packet will be inserted into the TX queue - ie. the time RIGHT NOW
 
 float AlsaReaderWriter::getTX_TimestampRaw(void) const
 {
-//	static uint32_t ctr(0);
+	//	static uint32_t ctr(0);
 
 	snd_pcm_sframes_t available_frames(0);
 	if (capture_device_handle)
 		available_frames=snd_pcm_avail(capture_device_handle);
-//	LL[ctr]=available_frames+read_sample_count ;
-//	ctr++;
-//	if (ctr>=128)
-//		ctr=0;
+	//	LL[ctr]=available_frames+read_sample_count ;
+	//	ctr++;
+	//	if (ctr>=128)
+	//		ctr=0;
 
 	return ((fmod(captureTimer.getTime(read_sample_count+available_frames)*sample_rate,sample_rate)));
 } //this is the time when a packet will be inserted into the TX queue - ie. the time RIGHT NOW
+
+inline int snd_pcm_readi_wrapper(_snd_pcm * handle, void * data, unsigned long int frames)
+{
+	MON("snd_pcm_readi");
+	return snd_pcm_readi (handle, data , frames);
+}
+
+
+
 
 TMM_Frame&  AlsaReaderWriter::Read (TMM_Frame& tmm_frame)
 {
@@ -250,7 +260,7 @@ TMM_Frame&  AlsaReaderWriter::Read (TMM_Frame& tmm_frame)
 
 
 	int inframes;
-	while ((inframes = snd_pcm_readi (capture_device_handle, tmm_frame.data() , frames)) < 0)
+	while ((inframes = snd_pcm_readi_wrapper (capture_device_handle, tmm_frame.data() , frames)) < 0)
 	{
 		if (inframes == -EAGAIN)
 			continue;
@@ -273,6 +283,8 @@ TMM_Frame&  AlsaReaderWriter::Read (TMM_Frame& tmm_frame)
 	tmm_frame.data_sz(snd_pcm_frames_to_bytes (capture_device_handle, inframes));
 	tmm_frame.plaintext(true);
 	tmm_frame.linear(true);
+	tmm_frame.set_pwr();
+	tmm_frame.gain(0);
 	//	tmm_frame.Dump();
 
 
@@ -311,7 +323,7 @@ const TMM_Frame&  AlsaReaderWriter::Write (const TMM_Frame& tmm_frame)
 		else if (outframes == -EPIPE)
 		{
 			//this is an under run - we starved the device
-//			std::cerr << "Output buffer underrun\n";
+			//			std::cerr << "Output buffer underrun\n";
 			//restarting = 1;
 			snd_pcm_prepare (playback_device_handle);
 			underrun_count++;
@@ -321,8 +333,8 @@ const TMM_Frame&  AlsaReaderWriter::Write (const TMM_Frame& tmm_frame)
 			std::cerr << "Unknown write error : " << snd_strerror (outframes) << std::endl;
 		}
 	}
-//		if (static_cast<size_t> (outframes) != frames)
-//			std::cerr << "Short write to playback device: " << outframes << ", expecting, " << frames << std::endl;
+	//		if (static_cast<size_t> (outframes) != frames)
+	//			std::cerr << "Short write to playback device: " << outframes << ", expecting, " << frames << std::endl;
 
 	return tmm_frame;
 }

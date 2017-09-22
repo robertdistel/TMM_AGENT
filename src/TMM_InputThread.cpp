@@ -14,6 +14,7 @@
 #include "Mixer.h"
 #include "setRealtimePriority.h"
 #include "OpenSSL_ReaderWriter.h"
+#include "Opus_ReaderWriter.h"
 #include "perfmon.h"
 
 
@@ -45,6 +46,7 @@ void TMM_InputThread::Context::do_thread (std::shared_ptr<Context> pctx)
 	set_realtime_priority();
 	auto mix(pctx->config->getMixer());
 	auto pkt(pctx->config->getPktIf());
+	auto  codec(pctx->config->getCodec(0));
 	Crypto crypto;
 //	auto snd(pctx->config->getAudioIf());
 
@@ -53,7 +55,7 @@ void TMM_InputThread::Context::do_thread (std::shared_ptr<Context> pctx)
 	do {
 		{
 			MON("TMM_InputThread:MainLoop");
-		mix->Write(crypto.decrypt(pkt->Read(tmm_frame)));
+		mix->Write(codec->expand(crypto.decrypt(pkt->Read(tmm_frame))));
 //		mix->Write((pkt->Read(tmm_frame)));
 		}
 	} while(!pctx->halt_thread );
