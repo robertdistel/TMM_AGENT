@@ -68,7 +68,7 @@ std::vector<int32_t> init_gain_LUT(void )
 	std::vector<int32_t> m(97);
 	for (int k=0; k<97; k++)
 	{
-		int v=uint32_t(pow10(double(k/20)));  //given a power gain in dB this is the multiplication required - note the factor of 20
+		int v=uint32_t(16384*pow10(double(k)/20));  //given a power gain in dB this is the multiplication required - note the factor of 20
 		m[k]=v;
 	}
 	return m;
@@ -85,22 +85,33 @@ TMM_Frame&  TMM_Frame::set_gain()
 	assert(linear()==true);
 
 	int32_t g=gain();
-	for(size_t k=0; k<data_sz()/2; k++)
-		((int16_t *)data())[k]*=g;
+	if (g>0)
+	{
+		g=gain_LUT[g];
+		for(size_t k=0; k<data_sz()/2; k++)
+			((int16_t *)data())[k]=g*((int16_t *)data())[k]/16384;
+	}
+	else
+	{
+		g=gain_LUT[-g];
+		for(size_t k=0; k<data_sz()/2; k++)
+			((int16_t *)data())[k]=(int32_t)16384*((int16_t *)data())[k]/g;
+
+	}
 	gain(0);
 	return *this;
 }
 
 std::map<int32_t,int32_t> init_log_LUT(void )
-{
+						{
 	std::map<int32_t,int32_t> m;
 	for (int k=0; k<97; k++)
 	{
-		int v=uint32_t(pow10(double(k/10)));
+		int v=uint32_t(pow10(double(k)/10));
 		m[v]=k;
 	}
 	return m;
-}
+						}
 
 
 const std::map<int32_t,int32_t> log_LUT(init_log_LUT());
@@ -128,8 +139,12 @@ TMM_Frame&  TMM_Frame::set_pwr() //measure the frames power (if linear and non-e
 	}
 
 	x=(sum_2-(sum*sum)/n)/n;
-	pwr(dB(x)-90); //sets full scale square wave (16bits) as +6dB power point
-	 	 	 	 	 //and we are now somewhere between -90 and 6 dB
+	pwr(dB(x)-72); //sets full scale square wave (14bits ) as +6dB power point
+	//and we are now somewhere between -84 and 6 dB
+	//	static int counter(0);
+	//	counter++;
+	//	if (counter%50==0)
+	//		std::cout<< x<<":" << dB(x) <<std::endl;
 	return *this ;
 }
 

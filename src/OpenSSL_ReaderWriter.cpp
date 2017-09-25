@@ -35,6 +35,7 @@ TMM_Frame  Crypto::encrypt(const TMM_Frame& ptext) //encrypt a block
 	uint8_t* KEY=(uint8_t*)key[ptext.domain_ID()];
 
 
+
 	int rc = EVP_EncryptInit_ex (ctx, EVP_aes_256_cbc (), NULL, KEY, iv);
 	if (rc != 1)
 	{
@@ -102,6 +103,10 @@ TMM_Frame  Crypto::decrypt (const TMM_Frame& ctext) //decrypt a block
 	auto ctx = EVP_CIPHER_CTX_new ();
 
 	uint8_t* KEY=(uint8_t*)key[ctext.domain_ID()];
+	static int counter(0);
+	if (counter% 50 == 0)
+		std::cout << (int)ctext.domain_ID() << std::endl;
+	counter ++;
 
 	int rc = EVP_DecryptInit_ex (ctx, EVP_aes_256_cbc (), NULL, KEY, ctext.IV());
 

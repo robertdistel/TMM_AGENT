@@ -55,7 +55,7 @@ void TMM_InputThread::Context::do_thread (std::shared_ptr<Context> pctx)
 	do {
 		{
 			MON("TMM_InputThread:MainLoop");
-		mix->Write(codec->expand(crypto.decrypt(pkt->Read(tmm_frame))));
+		mix->Write(codec->expand(crypto.decrypt(pkt->Read(tmm_frame))).set_gain());
 //		mix->Write((pkt->Read(tmm_frame)));
 		}
 	} while(!pctx->halt_thread );

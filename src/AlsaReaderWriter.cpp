@@ -202,7 +202,7 @@ float AlsaReaderWriter::getTX_TimestampRaw(void) const
 	snd_pcm_sframes_t available_frames(0);
 	if (capture_device_handle)
 		available_frames=snd_pcm_avail(capture_device_handle);
-	//	LL[ctr]=available_frames+read_sample_count ;
+	//	LL[ctr]=available_frames+read_sample_count ;sh
 	//	ctr++;
 	//	if (ctr>=128)
 	//		ctr=0;
