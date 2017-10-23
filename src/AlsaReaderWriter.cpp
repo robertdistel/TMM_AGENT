@@ -13,6 +13,7 @@
 #include <algorithm>
 #include "HardwareTimer.h"
 #include "perfmon.h"
+#include "Configuration.h"
 #include <map>
 
 
@@ -35,7 +36,7 @@ int AlsaReaderWriter::configure_alsa_audio (snd_pcm_t *& device, const char* nam
 	}
 	snd_pcm_hw_params_t *hw_params;
 
-	int err;
+	int err(0);
 	unsigned int tmp;
 	/* allocate memory for hardware parameter structure on the stack*/
 	snd_pcm_hw_params_alloca(&hw_params);
@@ -57,40 +58,26 @@ int AlsaReaderWriter::configure_alsa_audio (snd_pcm_t *& device, const char* nam
 	INIT(snd_pcm_hw_params_set_format ,device, hw_params, SND_PCM_FORMAT_S16_LE);
 
 	//set the sample rate
-	tmp = sample_rate;
+	tmp = config->getSampleRate();
+
 	INIT(snd_pcm_hw_params_set_rate_near , device, hw_params, &tmp, 0);
 
-	if (tmp != sample_rate)
+	if (tmp != config->getSampleRate())
 	{
-		fprintf (stderr, "Could not set requested sample rate, asked for %d got %d\n", sample_rate, tmp);
-		sample_rate = tmp;
+		fprintf (stderr, "Could not set requested sample rate, asked for %d got %d\n", config->getSampleRate(), tmp);
+		return -1;
 	}
 	//and number of channels
 	INIT(snd_pcm_hw_params_set_channels , device, hw_params, channels);
 
-	if (mode == SND_PCM_STREAM_PLAYBACK)
-	{
-		auto period(target_latency /2 + 5 * ms);
-		auto buffer(target_latency + 5 * ms);
+	auto period((ms * config->getFrameSize()) /2 + 5 * ms);
+	auto buffer((ms * config->getFrameSize()) + 5 * ms);
 
-		//set roughly how long we want our minimum latency will be - the minimum time between samples becoming available and the sound system unblocking
-		INIT(snd_pcm_hw_params_set_period_time_near , device, hw_params, &period, 0);
+	//set roughly how long we want our minimum latency will be - the minimum time between samples becoming available and the sound system unblocking
+	INIT(snd_pcm_hw_params_set_period_time_near , device, hw_params, &period, 0);
 
-		//set how long the buffer is - ie. what the maximum latency if we fill it right up , our ignore incoming data before it over/under flows.
-		INIT(snd_pcm_hw_params_set_buffer_time_near ,device, hw_params, &buffer, 0);
-	}
-	else
-	{
-		auto period(target_latency / 2 + 5 * ms);
-		auto buffer(target_latency + 5 * ms);
-
-		//set roughly how long we want our minimum latency will be - the minimum time between samples becoming available and the sound system unblocking
-		INIT(snd_pcm_hw_params_set_period_time_near , device, hw_params, &period, 0);
-
-		//set how long the buffer is - ie. what the maximum latency if we fill it right up , our ignore incoming data before it over/under flows.
-		INIT(snd_pcm_hw_params_set_buffer_time_near ,device, hw_params, &buffer, 0);
-
-	}
+	//set how long the buffer is - ie. what the maximum latency if we fill it right up , our ignore incoming data before it over/under flows.
+	INIT(snd_pcm_hw_params_set_buffer_time_near ,device, hw_params, &buffer, 0);
 
 
 	INIT(snd_pcm_hw_params ,device, hw_params);
@@ -101,34 +88,11 @@ int AlsaReaderWriter::configure_alsa_audio (snd_pcm_t *& device, const char* nam
 	//std::cout << "Bytes per frame are :" << bytes_per_frame << std::endl;
 
 
-#if 0
-
-	/* get the current hwparams */
-	INIT(snd_pcm_hw_params_current,device, hw_params);
-
-	if (snd_pcm_hw_params_supports_audio_wallclock_ts(hw_params))
-		printf("Playback relies on audio wallclock timestamps\n");
-	else
-		printf("Playback relies on audio sample counter timestamps\n");
-
-	snd_pcm_sw_params_alloca(&sw_params);
-
-	/* get the current swparams */
-	INIT(snd_pcm_sw_params_current,device, sw_params);
-
-
-	/* enable tstamp */
-	INIT( snd_pcm_sw_params_set_tstamp_mode,device, sw_params, SND_PCM_TSTAMP_ENABLE);
-
-	/* write the sw parameters */
-	INIT( snd_pcm_sw_params, device, sw_params);
-#endif
-
 	return err;
 }
 
 
-AlsaReaderWriter::AlsaReaderWriter () :
+/*AlsaReaderWriter::AlsaReaderWriter () :
     												  capture_device_name (), playback_device_name (),
 													  capture_device_handle (nullptr), playback_device_handle (nullptr),
 													  sample_rate (0), target_latency (0),
@@ -136,17 +100,17 @@ AlsaReaderWriter::AlsaReaderWriter () :
 													  read_sample_count(0), log_f(nullptr)
 {
 }
+ */
 
-AlsaReaderWriter::AlsaReaderWriter (std::string capture_device_name_,std::string playback_device_name_,unsigned int sample_rate_,unsigned int target_latency_) :
-    												  capture_device_name (capture_device_name_), playback_device_name (playback_device_name_),
-													  capture_device_handle (nullptr), playback_device_handle (nullptr),
-													  sample_rate (sample_rate_), target_latency (target_latency_ * ms),
-													  underrun_count (0), overrun_count (0),
-													  read_sample_count(0), log_f(nullptr)
+AlsaReaderWriter::AlsaReaderWriter (std::string capture_device_name_,std::string playback_device_name_, Configuration* config_) :
+    																  capture_device_name (capture_device_name_), playback_device_name (playback_device_name_),
+																	  capture_device_handle (nullptr), playback_device_handle (nullptr),
+																	  captureTimer(config_->captureTimer)
 {
-	//slow it down
-	//max_time_to_xflow = max_time_to_xflow*10;
-	//latency = latency * 10;
+	config=config_;
+	underrun_count = 0;
+	overrun_count =0;
+	read_sample_count=0;
 }
 
 
@@ -167,7 +131,7 @@ AlsaReaderWriter::~AlsaReaderWriter ()
 
 uint16_t AlsaReaderWriter::getRX_Timestamp(void) const
 {
-	return uint16_t((static_cast<int32_t>(captureTimer.getTime(read_sample_count)*sample_rate) ) % sample_rate);
+	return uint16_t((static_cast<int32_t>(captureTimer.getTime(read_sample_count)*config->getSampleRate()) ) % config->getSampleRate());
 } //this is when a packet was received - it is the time at the start of the RX queue
 
 class test_log
@@ -192,8 +156,12 @@ uint16_t AlsaReaderWriter::getTX_Timestamp(void) const
 	//	if (ctr>=128)
 	//		ctr=0;
 
-	return uint16_t((static_cast<int32_t>(captureTimer.getTime(read_sample_count+available_frames)*sample_rate) ) % sample_rate);
+	return uint16_t((static_cast<int32_t>(captureTimer.getTime(read_sample_count+available_frames)*config->getSampleRate()) ) % config->getSampleRate());
 } //this is the time when a packet will be inserted into the TX queue - ie. the time RIGHT NOW
+
+
+uint16_t AlsaReaderWriter::getLatencyInSamples(void) const { return (ms * config->getFrameSize() * config->getSampleRate()) / sec ; }
+uint16_t AlsaReaderWriter::getLatencyInMs(void) const { return (config->getFrameSize()  ) ; }
 
 float AlsaReaderWriter::getTX_TimestampRaw(void) const
 {
@@ -207,7 +175,7 @@ float AlsaReaderWriter::getTX_TimestampRaw(void) const
 	//	if (ctr>=128)
 	//		ctr=0;
 
-	return ((fmod(captureTimer.getTime(read_sample_count+available_frames)*sample_rate,sample_rate)));
+	return ((fmod(captureTimer.getTime(read_sample_count+available_frames)*config->getSampleRate(),config->getSampleRate())));
 } //this is the time when a packet will be inserted into the TX queue - ie. the time RIGHT NOW
 
 inline int snd_pcm_readi_wrapper(_snd_pcm * handle, void * data, unsigned long int frames)
@@ -229,15 +197,15 @@ TMM_Frame&  AlsaReaderWriter::Read (TMM_Frame& tmm_frame)
 		}
 
 		snd_pcm_prepare (capture_device_handle);
-		captureTimer.resetEstimator(sample_rate);
+		captureTimer.resetEstimator(config->getSampleRate());
 	}
 
 	MON("AlsaReaderWriter::Read");
-	unsigned int frames = std::min(snd_pcm_bytes_to_frames (capture_device_handle, TMM_Frame::maxDataSize)-1,snd_pcm_sframes_t((target_latency*sample_rate)/sec));
+	unsigned int frames = std::min(snd_pcm_bytes_to_frames (capture_device_handle, TMM_Frame::maxDataSize)-1,snd_pcm_sframes_t((ms * config->getFrameSize() *config->getSampleRate())/sec));
 
 	read_sample_count+=frames;
 	static unsigned int ticker(0);
-	if (ticker > sample_rate  ) //update once per second
+	if (ticker > config->getSampleRate()  ) //update once per second
 	{
 		ticker = 0;
 		struct timespec now;
@@ -260,7 +228,7 @@ TMM_Frame&  AlsaReaderWriter::Read (TMM_Frame& tmm_frame)
 
 
 	int inframes;
-	while ((inframes = snd_pcm_readi_wrapper (capture_device_handle, tmm_frame.data() , frames)) < 0)
+	while ((inframes = snd_pcm_readi_wrapper (capture_device_handle, tmm_frame.data() , frames)) != frames) //keep trying to read until we have the right number of samples - means we glitched but kept going
 	{
 		if (inframes == -EAGAIN)
 			continue;
@@ -270,10 +238,10 @@ TMM_Frame&  AlsaReaderWriter::Read (TMM_Frame& tmm_frame)
 			std::cerr << "Input buffer overrun\n";
 			//restarting = 1;
 			snd_pcm_prepare (capture_device_handle);
-			captureTimer.resetEstimator(sample_rate);
+			captureTimer.resetEstimator(config->getSampleRate());
 			overrun_count++;
 		}
-		else
+		else if (inframes <0)
 		{
 			std::cerr << "Unknown read error : " << snd_strerror (inframes) << std::endl;
 		}

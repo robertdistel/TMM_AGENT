@@ -27,7 +27,7 @@ s_in(0),s_out(0), socket_details ()
 }
 
 UdpReaderWriter::UdpReaderWriter (std::string socket_details_) :
-				s_in(0),s_out(0), socket_details (socket_details_)
+						s_in(0),s_out(0), socket_details (socket_details_)
 {
 }
 
@@ -44,6 +44,8 @@ TMM_Frame&  UdpReaderWriter::Read (TMM_Frame& tmm_frame)
 			std::cerr << "socket failed" << std::endl;
 			exit (-1);
 		}
+
+
 		std::smatch sm;
 		std::regex rex ("([^:]*):(.*)");
 		std::regex_match (socket_details, sm, rex);
@@ -61,6 +63,12 @@ TMM_Frame&  UdpReaderWriter::Read (TMM_Frame& tmm_frame)
 			std::cerr << "bind failed" << std::endl;
 			exit (-1);
 		}
+		//read will return 2 times per second with 0 length reads if its idle - we do this after the bind as it may call resolv which is necessarily slow
+		struct timeval tv;
+		tv.tv_sec = 0;  /* 1/2 Sec Timeout */
+		tv.tv_usec = 500000;  // Not init'ing this can cause strange errors
+		setsockopt(s_in, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv,sizeof(struct timeval));
+
 	}
 
 	if (!s_in)
@@ -72,12 +80,13 @@ TMM_Frame&  UdpReaderWriter::Read (TMM_Frame& tmm_frame)
 	MON("UdpReaderWriter::Read");
 
 	int recieved_bytes (0);
-
+	WRAP("udp recv");
 	if ((recieved_bytes = recv (s_in, tmm_frame.frame (), TMM_Frame::maxFrameSize, 0)) < 0)
 	{
 		recieved_bytes = 0;
 		//most likely we got a SIG_INTR to unblock waiting for data.
 	}
+	END();
 	tmm_frame.packet_sz(recieved_bytes); //and resize buffer to reflect how many bytes were really read
 	return tmm_frame;
 }
@@ -128,6 +137,9 @@ const TMM_Frame&  UdpReaderWriter::Write (const TMM_Frame& tmm_frame)
 	}
 
 	MON("UdpReaderWriter::Write");
+	if (tmm_frame.data_sz()==0)
+		return tmm_frame; //there is infact no audio to send - DTX detected - so send nothing
+
 	ssize_t rc=0;
 	if ((rc = send (s_out, tmm_frame.frame(), tmm_frame.packet_sz (), 0)) != int (tmm_frame.packet_sz ()))
 	{

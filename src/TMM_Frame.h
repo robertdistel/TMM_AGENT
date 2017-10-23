@@ -19,11 +19,12 @@ class Mixer;
 
 
 
-//a TMM frame must be big enough to contain the full expanded audio block - so 512- bytes->125 samples->15.625ms at 8kHz, 7.8125 at 16kHz
+//a TMM frame must be big enough to contain two full expanded audio blocks (to deal with error compensation and silence suppression
+//at 48k samples, so 48 (samples per ms) * 2 (16 bit samples) * 50ms * 2 = 9600 bytes - after compression these frames are a lot smaller - we wont need to fragment at the UDP layer
 class TMM_Frame
 {
 public:
-	static const uint16_t maxDataSize = 1900;
+	static const uint16_t maxDataSize = 9600;
 
 private:
 #pragma pack(1) //set byte alignment

@@ -20,11 +20,13 @@ private:
 	uint16_t target_latency;
 	uint16_t samples_per_ms;
 	uint32_t buff_sz;
+	uint32_t last_read;
+	int32_t phase;
+
 
 
 public:
-	uint32_t last_read;
-	int32_t phase;
+	uint32_t rx_last_active;
 
 	TMM_Frame&  Read (TMM_Frame& tmm_frame);
 	const TMM_Frame&  Write (const TMM_Frame& tmm_frame);

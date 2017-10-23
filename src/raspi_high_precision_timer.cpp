@@ -30,7 +30,7 @@ private:
 	Eigen::Matrix2d 	P;	//variance of parameters
 	Eigen::Vector2d 	X;  //the parameters
 	double				R;
-	Eigen::Matrix2d		Q;	//variation in state - it doesnt change very much - only as the underlying h/w drifts
+	Eigen::Matrix2d		Q;	//variation in state - it doesnt change very mucuint32_th - only as the underlying h/w drifts
 
 	double 				eps;
 
@@ -55,6 +55,7 @@ public:
 	void setWrap(uint64_t wrap_){wrap=wrap_;}						//(re)set the wrap of the hw/counter - set to 0 for no wrap
 	void reset(uint32_t nominal_tick_rate);										//reset the filter to unlocked - the hw/counter has glitched so we need to start trying to get a lock
 	double getTime(const uint64_t& hw_counter) ;			//now use the hw-counter to get the real time precisely
+	double getTime() ;										//get the time when the hardware timer was last updated
 
 
 	void updateEstimator(const uint64_t& hw_counter, const struct timespec& rtc); 	//we maintain a high precision estimator using the system rtc and a hardware counter
@@ -136,6 +137,11 @@ float HardwareTimer::getTime(const uint64_t& counter, uint32_t* epoch) const
 	return timer->getTime(counter);
 }
 
+float HardwareTimer::getTime() const
+{
+	return (timer->getTime());
+}
+
 void HardwareTimer::updateEstimator(const uint64_t& hw_counter, const struct timespec& rtc)
 {
 	timer->updateEstimator( hw_counter,  rtc);
@@ -190,26 +196,21 @@ HardwareTimerImpl::~HardwareTimerImpl()
 {
 }
 
-
-double HardwareTimerImpl::getTime(const uint64_t& hw_counter)
+double HardwareTimerImpl::getTime()
 {
 //	if (hw_counter < last_hw_count) //we have wrapped the hw counter
 //		unwrapped_base+=wrap;		//extend our unwrapped base to keep the count going
 //
+
+	double t(X(0)*double(last_hw_count+unwrapped_base)+X(1));
+	return t;
+}
+
+
+double HardwareTimerImpl::getTime(const uint64_t& hw_counter)
+{
 	last_hw_count=hw_counter;
 	double t(X(0)*double(hw_counter+unwrapped_base)+X(1));
-	static int ticker(0);
-//	if (ticker % 50 == 0)
-//	{
-//		struct timespec now;
-//		clock_gettime(CLOCK_REALTIME,&now);
-//		now.tv_sec-=epoch;
-//		double z=double(now.tv_sec) + double(now.tv_nsec)*1e-9;
-//		std::cout << std::setprecision(std::numeric_limits<double>::digits10 + 1) << fmod(z*8000,8000) << std::endl;
-//		std::cout << std::setprecision(std::numeric_limits<double>::digits10 + 1) << fmod(t*8000,8000) << std::endl;
-//	}
-//
-//	ticker++;
 	return t;
 }
 

@@ -13,6 +13,7 @@
 class TMM_Frame;
 class OpusEncoder;
 class OpusDecoder;
+class Configuration;
 
 
 
@@ -22,12 +23,12 @@ class OpusCodec
 public:
   TMM_Frame  compress (const TMM_Frame& frame);
   TMM_Frame  expand (const TMM_Frame& frame);
-  OpusCodec (uint32_t sample_rate);
+  OpusCodec (const Configuration* config_);
   ~OpusCodec ();
 private:
   OpusEncoder* encoderCtx;
   OpusDecoder* decoderCtx;
-  uint32_t 	sample_rate;
+  const Configuration* 	config;
 
   uint32_t 	tx_sequence_number;
   uint32_t 	rx_sequence_number;

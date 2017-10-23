@@ -8,19 +8,22 @@
 #ifndef PERFMON_H_
 #define PERFMON_H_
 #include <cstdint>
+#include <stdarg.h>
 
 #define PERFMON_ENABLE
 
 #ifdef PERFMON_ENABLE
+
+
 #define MON_THREAD(Y) PerfmonMainThread PERFMON_THREAD(hash16(ctcrc32(Y)),Y)
-#define MON(Y) Perfmon PERFMON(hash16(ctcrc32(Y)),Y)
+#define MON(Y) Perfmon __PERFMON_VAR__(hash16(ctcrc32(Y)),Y)
 #define WRAP(Y) { MON(Y)
 #define END() }
 #else
 #define MON_THREAD(Y)
 #define MON(Y)
 #define WRAP(Y)
-#define END
+#define END()
 #endif
 
 namespace detail {

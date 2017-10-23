@@ -15,6 +15,7 @@
 
 #include <memory>
 #include <thread>
+#include <iostream>
 
 
 
@@ -62,42 +63,67 @@ void TMM_DisplayThread::Context::do_thread (std::shared_ptr<Context> pctx)
 		fprintf(stderr,"GPIO Extender or LCD not detected - is the LCD Plate Fitted?\n");
 		return; //looks like there is no GPIO expander
 	}
-	bool dirty(true);
+
+	LCD_clear();
+	LCD_colour(Red);
+	LCD_wrap_printf("Wait for SYNC");
+	auto ph=popen("/usr/bin/chronyc \"waitsync 10 .001 1 2\"","r");
+	if( pclose(ph)!=0)
+	{
+		//could not lock
+		LCD_wrap_printf("Sync Failed");
+		std::cerr << "Could not achieve chronyc lock to network timesource\n" << std::endl;
+		exit(-1);
+	}
+
+	LCD_clear();
+	LCD_colour(Green);
+	LCD_wrap_printf("Sync OK");
+	pctx->config->timebase_locked=true;
+
+
+	//only run the display thread if we are configured with no external crypto radio ... this needs to be fixed I think
 	Button b(Null);
-	do {
-		switch (b)
-		{
-		case Button::Up:
-			if (pctx->config->selected_domain<(Configuration::noDomains()-1))
+	bool dirty(true);
+	if(pctx->config->secureRadioMode==Configuration::no_crypto)
+	{
+
+		do {
+			switch (b)
 			{
-				pctx->config->selected_domain+=1;
-				printf("UP\n");
-				dirty=true;
+			case Button::Up:
+				if (pctx->config->selected_domain<(pctx->config->noDomains()-1))
+				{
+					pctx->config->selected_domain+=1;
+					printf("UP\n");
+					dirty=true;
+				}
+				break;
+			case Button::Down:
+				if (pctx->config->selected_domain>0)
+				{
+					printf("DOWN\n");
+					pctx->config->selected_domain-=1;
+					dirty=true;
+				}
+				break;
+			case Button::Select:
+				pctx->config->shutdown=true;
+				break;
+			default:
+				break;
 			}
-			break;
-		case Button::Down:
-			if (pctx->config->selected_domain>0)
+			if (dirty)
 			{
-				printf("DOWN\n");
-				pctx->config->selected_domain-=1;
-				dirty=true;
+				LCD_clear();
+				LCD_colour(GetColor(pctx->config->getDomainName()));
+				LCD_wrap_printf(&pctx->config->getDomainName()[2]);
+				usleep(100000); //debouncing
+				dirty=false;
 			}
-			break;
-		case Button::Select:
-			pctx->config->shutdown=true;
-		break;
-		default:
-			break;
-		}
-		if (dirty)
-		{
-			LCD_clear();
-			LCD_colour(GetColor(pctx->config->getDomainName()));
-			LCD_wrap_printf(&pctx->config->getDomainName()[2]);
-			usleep(100000); //debouncing
-		}
-		b=btn_return_clk();
-	} while(!pctx->halt_thread && !pctx->config->shutdown);
+			b=btn_return_clk();
+		} while(!pctx->halt_thread );
+	}
 }
 
 
@@ -105,7 +131,7 @@ void TMM_DisplayThread::Context::do_thread (std::shared_ptr<Context> pctx)
 
 
 TMM_DisplayThread::TMM_DisplayThread (Configuration* config_) :
-									  pcontext (new Context (config_))
+											  pcontext (new Context (config_))
 {
 }
 

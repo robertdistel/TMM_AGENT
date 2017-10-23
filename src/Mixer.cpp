@@ -22,6 +22,7 @@ Mixer::Mixer(uint16_t target_latency_,uint32_t sample_rate):target_latency(targe
 	sample_buffer=std::vector<uint16_t>(buff_sz,0);
 	last_read=0;
 	phase=0;
+	rx_last_active=0;
 }
 
 
@@ -32,6 +33,7 @@ const TMM_Frame&  Mixer::Write (const TMM_Frame& tmm_frame)
 	MON("Mixer::Write");
 	assert(tmm_frame.linear()==true);
 	assert(tmm_frame.plaintext()==true);
+	rx_last_active=5;
 
 	uint16_t len(tmm_frame.data_sz()/2); //number of samples
 	//we write it in - adding the desired latency on (latency*samples_per_ms)
@@ -68,6 +70,8 @@ TMM_Frame&  Mixer::Read (TMM_Frame& tmm_frame)
 	uint16_t len(tmm_frame.data_sz()/2);
 	uint32_t k(last_read); //we set k to continue from where we left off.
 
+	if(rx_last_active!=0)
+		rx_last_active--;
 	for(uint16_t j(0); j<len; j++,k++) //and read in the new stuff
 	{
 		while(k>=buff_sz)

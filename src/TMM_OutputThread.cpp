@@ -15,6 +15,7 @@
 #include "OpenSSL_ReaderWriter.h"
 #include "perfmon.h"
 #include "Opus_ReaderWriter.h"
+#include "direct_gpio.h"
 
 
 
@@ -40,10 +41,16 @@ public:
 void TMM_OutputThread::Context::do_thread (std::shared_ptr<Context> pctx)
 {
 	MON_THREAD("TMM_OutputThread");
+	while(!pctx->config->timebase_locked)
+		sleep(1);
+
 	set_realtime_priority(5);
 	auto  pkt(pctx->config->getPktIf());
 	auto  snd(pctx->config->getAudioIf());
 	auto  codec(pctx->config->getCodec(0));
+	Pin analogueInMode(pctx->config->analogueInModePin,Pin::readonly);
+	Pin analogueInMute(pctx->config->analogueInMutePin,Pin::readonly);
+	Pin cyphertextActive(pctx->config->cypherModeActivePin,Pin::readonly);
 	Crypto crypto;
 
 
@@ -52,8 +59,33 @@ void TMM_OutputThread::Context::do_thread (std::shared_ptr<Context> pctx)
 		{
 			MON("TMM_OutputThread:MainLoop");
 
-			tmm_frame.domain_ID(pctx->config->selected_domain);
-			pkt->Write(crypto.encrypt(codec->compress(snd->Read(tmm_frame))));
+			if(pctx->config->secureRadioMode==Configuration::no_crypto)
+				tmm_frame.domain_ID(pctx->config->selected_domain);
+			else
+			{
+				if (cyphertextActive)
+				{
+					tmm_frame.domain_ID(pctx->config->cyphertext_domain);
+				}
+				else
+				{
+					tmm_frame.domain_ID(pctx->config->plaintext_domain);
+				}
+			}
+
+			tmm_frame=snd->Read(tmm_frame);
+			if (analogueInMute)
+				memset(tmm_frame.data(),0,tmm_frame.data_sz());	//if we have the mute enabled - memset the frame to zeros
+
+			tmm_frame=codec->compress(tmm_frame);
+
+			if(
+					tmm_frame.data_sz()==0 ||	//vox mode is enabled and we detected a zero length frame or
+					((pctx->config->analogueInMode == Configuration::codan) && !analogueInMode) //codan mode is enabled and there is no codan present
+			)
+				continue;
+
+			pkt->Write(crypto.encrypt(tmm_frame));
 		}
 	} while(!pctx->halt_thread);
 }
@@ -64,7 +96,7 @@ void TMM_OutputThread::Context::do_thread (std::shared_ptr<Context> pctx)
 
 
 TMM_OutputThread::TMM_OutputThread (Configuration* config_) :
-													  pcontext (new Context (config_))
+															  pcontext (new Context (config_))
 {
 }
 

@@ -20,6 +20,7 @@ public:
 	HardwareTimer();
 
 	float getTime(const uint64_t& counter, uint32_t* epoch=nullptr) const;
+	float getTime() const;
 
 	void updateEstimator(const uint64_t& hw_counter, const struct timespec& rtc);
 
