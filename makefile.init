@@ -1,0 +1,2 @@
+mkfile_path := $(abspath $(firstword $(MAKEFILE_LIST)))
+current_dir := $(dir $(mkfile_path))

@@ -1,0 +1,4 @@
+#!/bin/bash 
+sshpass -f <(printf '%s\n' raspberry) scp $1 pi@raspi0.local:/home/pi/Downloads/
+sshpass -f <(printf '%s\n' raspberry) scp -P 10022 $1 pi@operator2.local:/home/pi/Downloads/
+

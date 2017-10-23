@@ -1,0 +1,3 @@
+install: TMM_AGENT
+	@echo $(current_dir)TMM_AGENT	
+	@../install.target $(current_dir)TMM_AGENT 
